@@ -17,6 +17,7 @@ should be parsed in the unit tests below.
 
 from dataclasses import dataclass
 from typing import List, Union, Dict
+import re
 
 SSMLNode = Union["SSMLText", "SSMLTag"]
 
@@ -44,8 +45,33 @@ class SSMLText:
 
 
 def parseSSML(ssml: str) -> SSMLNode:
-    # TODO: implement this function
-    raise NotImplementedError()
+    tag_regex = re.compile(r'<(/?)(\w+)([^>]*)>|([^<]+)')
+    stack = []
+    root = SSMLTag("root", {}, [])
+    stack.append(root)
+    for match in tag_regex.finditer(ssml):
+        if match.group(4):
+            text = match.group(4).strip()
+            if text:
+                stack[-1].children.append(SSMLText(unescapeXMLChars(text)))
+        else:
+            closing, tag_name, attr_st = match.group(1), match.group(2), match.group(3)
+            if closing:
+                if stack[-1].name == tag_name:
+                    node = stack.pop()
+                    stack[-1].children.append(node)
+            else:
+                attrs = dict(re.findall(r'(\w+)="(.*?)"', attr_st))
+                is_self_closing = attr_st.strip().endswith('/')
+                tag = SSMLTag(tag_name, attrs, [])
+                if is_self_closing: 
+                    stack[-1].children.append(tag)
+                else: 
+                    stack.append(tag)
+
+    return root.children[0] if root.children else None
+
+
 
 
 def ssmlNodeToText(node: SSMLNode) -> str:
