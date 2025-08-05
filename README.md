@@ -30,7 +30,7 @@ make test
 
 ---
 
-## Development Guidelines
+<!-- ## Development Guidelines
 
 ### Do's
 
@@ -45,4 +45,4 @@ make test
 - Do NOT use any external libraries for the implementation.
 - DO NOT use any Coding Assistants like GitHub Copilot, ChatGPT, etc or any other AI based tools.
 - DO NOT visit direct blogs or articles related to implementation of the tasks.
-- DO NOT use StackOverflow or any other forum websites.
+- DO NOT use StackOverflow or any other forum websites. -->

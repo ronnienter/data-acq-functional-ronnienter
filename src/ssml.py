@@ -45,38 +45,47 @@ class SSMLText:
 
 
 def parseSSML(ssml: str) -> SSMLNode:
-    tag_regex = re.compile(r'<(/?)(\w+)([^>]*)>|([^<]+)')
+    tag_regex = re.compile(r'<\s*(/?)\s*(\w+)([^>]*)>|([^<]+)')
     stack = []
     root = SSMLTag("root", {}, [])
     stack.append(root)
+
     for match in tag_regex.finditer(ssml):
-        if match.group(4):
-            text = match.group(4).strip()
+        if match.group(4):  # Text
+            text = match.group(4)  # no .strip()
             if text:
                 stack[-1].children.append(SSMLText(unescapeXMLChars(text)))
         else:
             closing, tag_name, attr_st = match.group(1), match.group(2), match.group(3)
+            if "'" in attr_st:
+                raise Exception("Invalid attribute format")
+
             if closing:
                 if stack[-1].name == tag_name:
                     node = stack.pop()
                     stack[-1].children.append(node)
             else:
-                attrs = dict(re.findall(r'(\w+)="(.*?)"', attr_st))
+                attrs = dict(re.findall(r'([:\w]+)="(.*?)"', attr_st))
                 is_self_closing = attr_st.strip().endswith('/')
                 tag = SSMLTag(tag_name, attrs, [])
-                if is_self_closing: 
+                if is_self_closing:
                     stack[-1].children.append(tag)
-                else: 
+                else:
                     stack.append(tag)
 
-    return root.children[0] if root.children else None
+    if len(root.children) != 1 or not isinstance(root.children[0], SSMLTag) or root.children[0].name != "speak":
+        raise Exception("Must have one top-level <speak> tag")
+    else:
+        return root.children[0]
 
 
 
 
 def ssmlNodeToText(node: SSMLNode) -> str:
-    # TODO: implement this function
-    raise NotImplementedError()
+    if isinstance(node, SSMLText):
+        return escapeXMLChars(node.text)
+    return f"<{node.name}>{''.join(ssmlNodeToText(c) for c in node.children)}</{node.name}>"
+
 
 
 def unescapeXMLChars(text: str) -> str:
